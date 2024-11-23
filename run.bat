@@ -1,0 +1,1 @@
+odin run src  -- %1 %2
