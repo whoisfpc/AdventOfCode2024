@@ -5,6 +5,7 @@ import "core:os"
 import "core:strings"
 import "solutions/day00"
 import "solutions/day01"
+import "solutions/day02"
 
 main :: proc() {
 	day := os.args[1]
@@ -35,6 +36,12 @@ main :: proc() {
 			ans = day01.part1(puzzle_data)
 		} else {
 			ans = day01.part2(puzzle_data)
+		}
+	case "02":
+		if part == "a" {
+			ans = day02.part1(puzzle_data)
+		} else {
+			ans = day02.part2(puzzle_data)
 		}
 	}
 	fmt.printfln("day%v part %v, ans is %v", day, part, ans)
