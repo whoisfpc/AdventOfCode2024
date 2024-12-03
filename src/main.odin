@@ -8,10 +8,28 @@ import "solutions/day01"
 import "solutions/day02"
 import "solutions/day03"
 
+Solver :: #type proc(input: [][]u8) -> int
+
 main :: proc() {
+
+	solvers_part1 := make(map[string]Solver)
+	solvers_part2 := make(map[string]Solver)
+	defer {
+		delete(solvers_part1)
+		delete(solvers_part2)
+	}
+	solvers_part1["00"] = day00.part1
+	solvers_part1["01"] = day01.part1
+	solvers_part1["02"] = day02.part1
+	solvers_part1["03"] = day03.part1
+
+	solvers_part2["00"] = day00.part2
+	solvers_part2["01"] = day01.part2
+	solvers_part2["02"] = day02.part2
+	solvers_part2["03"] = day03.part2
+
 	day := os.args[1]
 	part := os.args[2]
-	ans: int
 	filename := fmt.aprintf("inputs/day%v.txt", day)
 	defer delete(filename)
 
@@ -25,33 +43,18 @@ main :: proc() {
 	puzzle_data := data_to_u8_slice(data)
 	defer delete(puzzle_data)
 
-	switch day {
-	case "00":
-		if part == "a" {
-			ans = day00.part1(puzzle_data)
-		} else {
-			ans = day00.part2(puzzle_data)
-		}
-	case "01":
-		if part == "a" {
-			ans = day01.part1(puzzle_data)
-		} else {
-			ans = day01.part2(puzzle_data)
-		}
-	case "02":
-		if part == "a" {
-			ans = day02.part1(puzzle_data)
-		} else {
-			ans = day02.part2(puzzle_data)
-		}
-	case "03":
-		if part == "a" {
-			ans = day03.part1(puzzle_data)
-		} else {
-			ans = day03.part2(puzzle_data)
-		}
+	solver_proc: Solver = nil
+	if part == "a" {
+		solver_proc = solvers_part1[day]
+	} else {
+		solver_proc = solvers_part2[day]
 	}
-	fmt.printfln("day%v part %v, ans is %v", day, part, ans)
+	if solver_proc != nil {
+		ans := solver_proc(puzzle_data)
+		fmt.printfln("day%v part %v, ans is %v", day, part, ans)
+	} else {
+		fmt.printfln("can not found solover for day%v part %v", day, part)
+	}
 }
 
 data_to_u8_slice :: proc(data: []byte) -> [][]u8 {
