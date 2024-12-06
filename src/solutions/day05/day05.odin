@@ -6,7 +6,6 @@ import "core:slice"
 import "core:strconv"
 import "core:strings"
 
-//TODO： not a tree, is a graph
 Graph :: struct {
 	all_nodes: map[int]^Node,
 }
@@ -19,7 +18,10 @@ Node :: struct {
 }
 
 destroy_graph :: proc(graph: ^Graph) {
-	// todo
+	for _, node in graph.all_nodes {
+		free(node)
+	}
+	delete(graph.all_nodes)
 }
 
 find_or_create :: proc(graph: ^Graph, value: int) -> ^Node {
@@ -42,17 +44,14 @@ insert_pair :: proc(graph: ^Graph, before, after: int) {
 }
 
 build_depth :: proc(graph: ^Graph) {
+	has_entry := false
 	for _, v in graph.all_nodes {
 		if len(v.befores) == 0 {
 			walk_update_depth(v, 0)
+			has_entry = true
 		}
 	}
-	// _, has_key := depth_map[current.value]
-	// assert(has_key == false)
-	// depth_map[current.value] = depth
-	// for child in current.children {
-	// 	build_depth(child, depth + 1, depth_map)
-	// }
+	assert(has_entry)
 }
 
 walk_update_depth :: proc(node: ^Node, depth: int) {
@@ -62,23 +61,19 @@ walk_update_depth :: proc(node: ^Node, depth: int) {
 	}
 }
 
-// TODO: safe rules, and build graph every time
+RulePair :: distinct [2]int
+
 part1 :: proc(input: [][]u8) -> int {
 	ans := 0
-	graph: Graph
-	defer destroy_graph(&graph)
-	depth_map := make(map[int]int)
-	defer delete(depth_map)
+
+	all_rules := make([dynamic]RulePair)
+	defer delete(all_rules)
+
 
 	parsing_rule := true
 	for row in input {
 		if len(row) == 0 {
 			parsing_rule = false
-			build_depth(&graph)
-			for k, v in graph.all_nodes {
-				depth_map[v.value] = v.depth
-			}
-			fmt.println(depth_map)
 			continue
 		}
 		row_s := transmute(string)row
@@ -86,15 +81,39 @@ part1 :: proc(input: [][]u8) -> int {
 			splite_idx := strings.index(row_s, "|")
 			a, _ := strconv.parse_int(row_s[:splite_idx])
 			b, _ := strconv.parse_int(row_s[splite_idx + 1:])
-			insert_pair(&graph, a, b)
+			append(&all_rules, RulePair{a, b})
 		} else {
+			num_set := make(map[int]bool)
 			nums := make([dynamic]int)
-			defer delete(nums)
+			defer {
+				delete(num_set)
+				delete(nums)
+			}
 
 			for num_s in strings.split_iterator(&row_s, ",") {
 				c, _ := strconv.parse_int(num_s)
 				append(&nums, c)
+				num_set[c] = true
 			}
+
+			graph: Graph
+			depth_map := make(map[int]int)
+			defer {
+				destroy_graph(&graph)
+				delete(depth_map)
+			}
+			for rule in all_rules {
+				has_a := num_set[rule.x]
+				has_b := num_set[rule.y]
+				if has_a && has_b {
+					insert_pair(&graph, rule.x, rule.y)
+				}
+			}
+			build_depth(&graph)
+			for _, v in graph.all_nodes {
+				depth_map[v.value] = v.depth
+			}
+			// fmt.println(depth_map)
 
 			current_depth := 0
 			order_right := true
@@ -115,5 +134,84 @@ part1 :: proc(input: [][]u8) -> int {
 }
 
 part2 :: proc(input: [][]u8) -> int {
-	return 0
+	ans := 0
+
+	all_rules := make([dynamic]RulePair)
+	defer delete(all_rules)
+
+
+	parsing_rule := true
+	for row in input {
+		if len(row) == 0 {
+			parsing_rule = false
+			continue
+		}
+		row_s := transmute(string)row
+		if parsing_rule {
+			splite_idx := strings.index(row_s, "|")
+			a, _ := strconv.parse_int(row_s[:splite_idx])
+			b, _ := strconv.parse_int(row_s[splite_idx + 1:])
+			append(&all_rules, RulePair{a, b})
+		} else {
+			num_set := make(map[int]bool)
+			nums := make([dynamic][2]int)
+			defer {
+				delete(num_set)
+				delete(nums)
+			}
+
+			for num_s in strings.split_iterator(&row_s, ",") {
+				c, _ := strconv.parse_int(num_s)
+				append(&nums, [2]int{c, 0})
+				num_set[c] = true
+			}
+
+			graph: Graph
+			depth_map := make(map[int]int)
+			defer {
+				destroy_graph(&graph)
+				delete(depth_map)
+			}
+			for rule in all_rules {
+				has_a := num_set[rule.x]
+				has_b := num_set[rule.y]
+				if has_a && has_b {
+					insert_pair(&graph, rule.x, rule.y)
+				}
+			}
+			build_depth(&graph)
+			for _, v in graph.all_nodes {
+				depth_map[v.value] = v.depth
+			}
+			for &pair in nums {
+				n := pair.x
+				pair.y = depth_map[n]
+			}
+			// fmt.println(depth_map)
+
+			current_depth := 0
+			order_right := true
+			for pair in nums {
+				n := pair.x
+				if current_depth > depth_map[n] {
+					order_right = false
+					break
+				}
+				current_depth = depth_map[n]
+			}
+			if !order_right {
+				slice.stable_sort_by_cmp(nums[:], proc(i, j: [2]int) -> slice.Ordering {
+					if i.y < j.y {
+						return .Less
+					} else if i.y > j.y {
+						return .Greater
+					}
+					return .Equal
+				})
+				ans += nums[len(nums) / 2].x
+			}
+			// fmt.println(order_right, nums[:])
+		}
+	}
+	return ans
 }
