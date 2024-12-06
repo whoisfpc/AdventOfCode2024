@@ -1,1 +1,1 @@
-odin run src  -- %1 %2
+odin run src -debug -sanitize:address  -- %1 %2
