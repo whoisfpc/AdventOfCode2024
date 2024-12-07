@@ -16,29 +16,18 @@ Solver :: #type proc(input: [][]u8) -> int
 
 main :: proc() {
 
-	solvers_part1 := make(map[string]Solver)
-	solvers_part2 := make(map[string]Solver)
+	solvers := make(map[string][2]Solver)
 	defer {
-		delete(solvers_part1)
-		delete(solvers_part2)
+		delete(solvers)
 	}
-	solvers_part1["00"] = day00.part1
-	solvers_part1["01"] = day01.part1
-	solvers_part1["02"] = day02.part1
-	solvers_part1["03"] = day03.part1
-	solvers_part1["04"] = day04.part1
-	solvers_part1["05"] = day05.part1
-	solvers_part1["06"] = day06.part1
-	solvers_part1["07"] = day07.part1
-
-	solvers_part2["00"] = day00.part2
-	solvers_part2["01"] = day01.part2
-	solvers_part2["02"] = day02.part2
-	solvers_part2["03"] = day03.part2
-	solvers_part2["04"] = day04.part2
-	solvers_part2["05"] = day05.part2
-	solvers_part2["06"] = day06.part2
-	solvers_part2["07"] = day07.part2
+	solvers["00"] = {day00.part1, day00.part2}
+	solvers["01"] = {day01.part1, day01.part2}
+	solvers["02"] = {day02.part1, day02.part2}
+	solvers["03"] = {day03.part1, day03.part2}
+	solvers["04"] = {day04.part1, day04.part2}
+	solvers["05"] = {day05.part1, day05.part2}
+	solvers["06"] = {day06.part1, day06.part2}
+	solvers["07"] = {day07.part1, day07.part2}
 
 	day := os.args[1]
 	part := os.args[2]
@@ -57,9 +46,9 @@ main :: proc() {
 
 	solver_proc: Solver = nil
 	if part == "a" {
-		solver_proc = solvers_part1[day]
+		solver_proc = solvers[day][0]
 	} else {
-		solver_proc = solvers_part2[day]
+		solver_proc = solvers[day][1]
 	}
 	if solver_proc != nil {
 		ans := solver_proc(puzzle_data)
