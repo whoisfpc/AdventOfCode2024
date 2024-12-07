@@ -105,12 +105,20 @@ part2 :: proc(input: [][]u8) -> int {
 	height := len(input)
 	width := len(input[0])
 
+	origin_map := make([][]Direction_Set, height)
+	for &line in origin_map {
+		line = make([]Direction_Set, width)
+	}
 	pass_map := make([][]Direction_Set, height)
 	for &line in pass_map {
 		line = make([]Direction_Set, width)
 	}
 
 	defer {
+		for line in origin_map {
+			delete(line)
+		}
+		delete(origin_map)
 		for line in pass_map {
 			delete(line)
 		}
@@ -128,10 +136,31 @@ part2 :: proc(input: [][]u8) -> int {
 		}
 	}
 
+	{
+		pos := start
+		dir := Direction.Up
+
+		for {
+			if dir in origin_map[pos.x][pos.y] {
+				break
+			}
+			origin_map[pos.x][pos.y] += {dir}
+			next := pos + Direction_Move[dir]
+			if next.x < 0 || next.x >= height || next.y < 0 || next.y >= width {
+				break
+			}
+			if input[next.x][next.y] == '#' {
+				dir = next_dir(dir)
+			} else {
+				pos = next
+			}
+		}
+	}
+
 	assert(start != [2]int{-1, -1})
 	for i in 0 ..< height {
 		for j in 0 ..< width {
-			if input[i][j] == '#' || input[i][j] == '^' {
+			if input[i][j] == '#' || input[i][j] == '^' || card(origin_map[i][j]) == 0 {
 				continue
 			}
 			reset_pass_map(pass_map)
@@ -156,6 +185,5 @@ part2 :: proc(input: [][]u8) -> int {
 			}
 		}
 	}
-
 	return ans
 }
