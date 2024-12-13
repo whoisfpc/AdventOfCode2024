@@ -22,6 +22,8 @@ Direction_Move := [Direction][2]int {
 	.Right = {0, +1},
 }
 
+Corner_Move := [4][2]int{{-1, -1}, {-1, +1}, {+1, -1}, {+1, +1}}
+
 make_2d :: proc(height, width: int, $E: typeid) -> [][]E {
 	s2 := make([][]E, height)
 	for &line in s2 {
@@ -101,22 +103,72 @@ get_edge_count :: proc(around_info: Direction_Set) -> int {
 	return 4 - card(around_info)
 }
 
+check_corner :: proc(id_map: [][]int, pos: V2, corner: int) -> bool {
+	height, width := len(id_map), len(id_map[0])
+	p2 := pos + Corner_Move[corner]
+	if p2.x < 0 || p2.x >= height || p2.y < 0 || p2.y >= width {
+		return false
+	}
+	return id_map[p2.x][p2.y] == id_map[pos.x][pos.y]
+}
+
+// 有共点问题，得用half edge！
 get_vertex_count :: proc(around_info: Direction_Set, id_map: [][]int, pos: V2) -> int {
+	count := 0
+	id := id_map[pos.x][pos.y]
 	switch around_info {
 	case {}:
-		return 4
-	case {.Up}, {.Down}, {.Left}, {.Right}:
-		return 2
-	case {.Up, .Left}, {.Up, .Right}, {.Down, .Left}, {.Down, .Right}:
-		return 1
-	case {.Up, .Down}, {.Left, .Right}:
-		return 0
-	case {.Up, .Down, .Left}, {.Up, .Down, .Right}, {.Left, .Right, .Up}, {.Left, .Right, .Down}:
-		return 0
+		count = 4
+	case {.Down}:
+		count = 2
+	case {.Up}:
+		count = 2
+		count += 1 if check_corner(id_map, pos, 0) else 0
+		count += 1 if check_corner(id_map, pos, 1) else 0
+	case {.Left}:
+		count = 2
+		count += 1 if check_corner(id_map, pos, 0) else 0
+	case {.Right}:
+		count = 2
+		count += 1 if check_corner(id_map, pos, 1) else 0
+	case {.Up, .Left}:
+		count = 1
+		count += 1 if check_corner(id_map, pos, 1) else 0
+	case {.Up, .Right}:
+		count = 1
+		count += 1 if check_corner(id_map, pos, 0) else 0
+	case {.Down, .Left}:
+		count = 1
+		count += 1 if check_corner(id_map, pos, 0) else 0
+	case {.Down, .Right}:
+		count = 1
+		count += 1 if check_corner(id_map, pos, 1) else 0
+	case {.Up, .Down}:
+		count = 0
+		count += 1 if check_corner(id_map, pos, 0) else 0
+		count += 1 if check_corner(id_map, pos, 1) else 0
+	case {.Left, .Right}:
+		count = 0
+		count += 1 if check_corner(id_map, pos, 0) else 0
+		count += 1 if check_corner(id_map, pos, 1) else 0
+	case {.Up, .Down, .Left}:
+		count = 0
+		count += 1 if check_corner(id_map, pos, 1) else 0
+	case {.Up, .Down, .Right}:
+		count = 0
+		count += 1 if check_corner(id_map, pos, 0) else 0
+	case {.Left, .Right, .Down}:
+		count = 0
+		count += 1 if check_corner(id_map, pos, 0) else 0
+		count += 1 if check_corner(id_map, pos, 1) else 0
+	case {.Left, .Right, .Up}:
+		count = 0
 	case {.Up, .Down, .Left, .Right}:
-		return 0
+		count = 0
+	case:
+		unreachable()
 	}
-	unreachable()
+	return count
 }
 
 part1 :: proc(input: [][]u8) -> int {
@@ -179,13 +231,13 @@ part2 :: proc(input: [][]u8) -> int {
 			area_info := area_map[id]
 			area_info.area += 1
 			area_info.alpha = rune(c)
-			area_info.vertex_count += get_vertex_count(around, id_map, V2{i, j}
+			area_info.vertex_count += get_vertex_count(around, id_map, V2{i, j})
 			area_map[id] = area_info
 		}
 	}
 
 	for k, v in area_map {
-		fmt.println(k, v)
+		// fmt.println(k, v)
 		ans += v.area * v.vertex_count
 	}
 	return ans
