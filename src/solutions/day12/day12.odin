@@ -112,7 +112,6 @@ check_corner :: proc(id_map: [][]int, pos: V2, corner: int) -> bool {
 	return id_map[p2.x][p2.y] == id_map[pos.x][pos.y]
 }
 
-// 有共点问题，得用half edge！
 get_vertex_count :: proc(around_info: Direction_Set, id_map: [][]int, pos: V2) -> int {
 	count := 0
 	id := id_map[pos.x][pos.y]
