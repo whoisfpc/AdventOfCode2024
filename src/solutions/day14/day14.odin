@@ -112,6 +112,7 @@ create_robots_image :: proc(all_robots: [dynamic]Robot, pixels: []image.RGBA_Pix
 		pixels[idx] = image.RGBA_Pixel{255, 255, 255, 255}
 	}
 	img, ok := image.pixels_to_image(pixels, width, height)
+	img.which = .BMP
 	assert(ok)
 	sb, _ := strings.builder_make()
 	defer strings.builder_destroy(&sb)
