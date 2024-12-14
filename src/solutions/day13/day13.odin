@@ -74,10 +74,7 @@ min_tokens :: proc(coef: matrix[2, 2]int, b: matrix[2, 1]int) -> int {
 			return 0
 		}
 	}
-	cofactor := matrix[2, 2]int{
-		+coef[1, 1], -coef[0, 1], 
-		-coef[1, 0], +coef[0, 0], 
-	}
+	cofactor := linalg.transpose(linalg.adjugate(coef))
 	cofactor_b := cofactor * b
 	div_a, mod_a := math.divmod(cofactor_b[0, 0], det)
 	div_b, mod_b := math.divmod(cofactor_b[1, 0], det)
