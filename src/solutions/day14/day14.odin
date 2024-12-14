@@ -91,21 +91,6 @@ print_grid :: proc(all_robots: [dynamic]Robot) {
 	}
 }
 
-check_easter_egg :: proc(all_robots: [dynamic]Robot) -> bool {
-	for y in 0 ..< height {
-		for x in 0 ..< width {
-			n := 0
-			for r in all_robots {
-				n += 1 if r.pos == V2{x, y} else 0
-			}
-			if n > 0 {
-				return false
-			}
-		}
-	}
-	return true
-}
-
 create_robots_image :: proc(all_robots: [dynamic]Robot, pixels: []image.RGBA_Pixel, number: int) {
 	for r in all_robots {
 		idx := r.pos.y * width + r.pos.x
