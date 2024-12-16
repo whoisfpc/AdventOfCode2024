@@ -65,9 +65,10 @@ fix_pq :: proc(q: ^pq.Priority_Queue(Node), v: Node) {
 		if node.pos == v.pos && node.dir == v.dir {
 			node.cost = v.cost
 			pq.fix(q, i)
-			break
+			return
 		}
 	}
+	pq.push(q, v)
 }
 
 part1 :: proc(input: [][]u8) -> int {
@@ -86,15 +87,6 @@ part1 :: proc(input: [][]u8) -> int {
 		for c, j in line {
 			for d in Direction {
 				dist[i][j][d] = max(int)
-				node := Node {
-					pos  = V2{i, j},
-					dir  = d,
-					cost = max(int),
-				}
-				if c == 'S' && d == .Right {
-					node.cost = 0
-				}
-				pq.push(&q, node)
 			}
 			if c == 'S' {
 				start = V2{i, j}
@@ -104,14 +96,15 @@ part1 :: proc(input: [][]u8) -> int {
 		}
 	}
 	dist[start.x][start.y][.Right] = 0
+	start_node := Node {
+		pos  = start,
+		dir  = .Right,
+		cost = 0,
+	}
+	pq.push(&q, start_node)
 
 	for pq.len(q) > 0 {
 		node := pq.pop(&q)
-		// fmt.println("pop", node)
-		if node.cost == max(int) {
-			break
-		}
-
 		neighbor: [3]Node
 		neighbor[0] = Node {
 			pos  = node.pos,
@@ -136,7 +129,6 @@ part1 :: proc(input: [][]u8) -> int {
 			if v.cost < dist[v.pos.x][v.pos.y][v.dir] {
 				dist[v.pos.x][v.pos.y][v.dir] = v.cost
 				fix_pq(&q, v)
-				// fmt.println("fix", v)
 			}
 		}
 	}
