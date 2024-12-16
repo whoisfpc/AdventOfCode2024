@@ -2,6 +2,7 @@ package day16
 
 import "../utils"
 import pq "core:container/priority_queue"
+import "core:container/queue"
 import "core:fmt"
 import "core:os"
 import "core:strings"
@@ -142,7 +143,166 @@ part1 :: proc(input: [][]u8) -> int {
 	return ans
 }
 
+Path :: struct {
+	nodes: [dynamic]Node,
+}
+
 part2 :: proc(input: [][]u8) -> int {
 	ans := 0
+	height, width := len(input), len(input[0])
+	dist := utils.make_2d(height, width, [Direction]int)
+	defer utils.destroy_2d(dist)
+	prev := utils.make_2d(height, width, [Direction]Path)
+	defer {
+		for line in prev {
+			for d in line {
+				for p in d {
+					delete(p.nodes)
+				}
+			}
+		}
+		utils.destroy_2d(prev)
+	}
+
+	q: pq.Priority_Queue(Node)
+	pq.init(&q, less_node, pq.default_swap_proc(Node))
+	pq.reserve(&q, height * width)
+	defer pq.destroy(&q)
+
+	start, end: V2
+	for line, i in input {
+		for c, j in line {
+			for d in Direction {
+				dist[i][j][d] = max(int)
+				prev[i][j][d].nodes = make([dynamic]Node)
+			}
+			if c == 'S' {
+				start = V2{i, j}
+			} else if c == 'E' {
+				end = V2{i, j}
+			}
+		}
+	}
+	dist[start.x][start.y][.Right] = 0
+	start_node := Node {
+		pos  = start,
+		dir  = .Right,
+		cost = 0,
+	}
+	pq.push(&q, start_node)
+
+	for pq.len(q) > 0 {
+		node := pq.pop(&q)
+		neighbor: [3]Node
+		neighbor[0] = Node {
+			pos  = node.pos,
+			dir  = turn_left(node.dir),
+			cost = node.cost + 1000,
+		}
+		neighbor[1] = Node {
+			pos  = node.pos,
+			dir  = turn_right(node.dir),
+			cost = node.cost + 1000,
+		}
+		neighbor[2] = Node {
+			pos  = node.pos + Direction_Move[node.dir],
+			dir  = node.dir,
+			cost = node.cost + 1,
+		}
+
+		for v in neighbor {
+			if input[v.pos.x][v.pos.y] == '#' {
+				continue
+			}
+			if v.cost < dist[v.pos.x][v.pos.y][v.dir] {
+				dist[v.pos.x][v.pos.y][v.dir] = v.cost
+				clear(&prev[v.pos.x][v.pos.y][v.dir].nodes)
+				append(&prev[v.pos.x][v.pos.y][v.dir].nodes, node)
+				fix_pq(&q, v)
+			} else if v.cost == dist[v.pos.x][v.pos.y][v.dir] {
+				append(&prev[v.pos.x][v.pos.y][v.dir].nodes, node)
+			}
+		}
+	}
+
+	// for line, i in prev {
+	// 	for c, j in line {
+	// 		if input[i][j] != '#' {
+	// 			for d, dir in c {
+	// 				fmt.printfln("pos: (%v, %v) dir: %v, nodes: %v", i, j, dir, d.nodes)
+	// 			}
+	// 		}
+	// 	}
+	// }
+
+	sit_map := utils.make_2d(height, width, bool)
+	defer utils.destroy_2d(sit_map)
+
+	fill_sit_map(sit_map, prev, end, dist)
+	// print_sit_map(sit_map, input)
+	for line in sit_map {
+		for b in line {
+			if b {
+				ans += 1
+			}
+		}
+	}
 	return ans
+}
+
+print_sit_map :: proc(sit_map: [][]bool, input: [][]u8) {
+	for line, i in input {
+		for c, j in line {
+			if sit_map[i][j] {
+				fmt.print("O")
+			} else {
+				fmt.print(rune(c))
+			}
+		}
+		fmt.println()
+	}
+}
+
+fill_sit_map :: proc(sit_map: [][]bool, prev: [][][Direction]Path, end: V2, dist: [][][Direction]int) {
+
+	min_cost := min(
+		dist[end.x][end.y][.Up],
+		dist[end.x][end.y][.Down],
+		dist[end.x][end.y][.Left],
+		dist[end.x][end.y][.Right],
+	)
+	fmt.println("min_cost", min_cost)
+	height, width := len(sit_map), len(sit_map[0])
+	// passed := utils.make_2d(height, width, [Direction]bool)
+	// defer utils.destroy_2d(passed)
+
+	q: queue.Queue(Node)
+	queue.init(&q)
+	defer queue.destroy(&q)
+
+	sit_map[end.x][end.y] = true
+	// fmt.println("fill site", cur)
+	for p, dir in prev[end.x][end.y] {
+		for n in p.nodes {
+			if dist[end.x][end.y][dir] == min_cost {
+				queue.push(&q, n)
+				// passed[end.x][end.y][dir] = true
+				// fmt.println("end: ", n)
+			}
+		}
+	}
+
+	for queue.len(q) > 0 {
+		node := queue.pop_front(&q)
+		cur := node.pos
+		sit_map[cur.x][cur.y] = true
+		// fmt.println("fill site", cur)
+		// passed[cur.x][cur.y][node.dir] = true
+		for n in prev[cur.x][cur.y][node.dir].nodes {
+			// if !passed[n.pos.x][n.pos.y][n.dir] {
+			// }
+			queue.push_back(&q, n)
+			// fmt.printfln("iter %v, push %v", iter, n)
+		}
+	}
 }
