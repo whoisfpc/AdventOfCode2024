@@ -271,23 +271,17 @@ fill_sit_map :: proc(sit_map: [][]bool, prev: [][][Direction]Path, end: V2, dist
 		dist[end.x][end.y][.Left],
 		dist[end.x][end.y][.Right],
 	)
-	fmt.println("min_cost", min_cost)
 	height, width := len(sit_map), len(sit_map[0])
-	// passed := utils.make_2d(height, width, [Direction]bool)
-	// defer utils.destroy_2d(passed)
 
 	q: queue.Queue(Node)
 	queue.init(&q)
 	defer queue.destroy(&q)
 
 	sit_map[end.x][end.y] = true
-	// fmt.println("fill site", cur)
 	for p, dir in prev[end.x][end.y] {
 		for n in p.nodes {
 			if dist[end.x][end.y][dir] == min_cost {
 				queue.push(&q, n)
-				// passed[end.x][end.y][dir] = true
-				// fmt.println("end: ", n)
 			}
 		}
 	}
@@ -296,13 +290,8 @@ fill_sit_map :: proc(sit_map: [][]bool, prev: [][][Direction]Path, end: V2, dist
 		node := queue.pop_front(&q)
 		cur := node.pos
 		sit_map[cur.x][cur.y] = true
-		// fmt.println("fill site", cur)
-		// passed[cur.x][cur.y][node.dir] = true
 		for n in prev[cur.x][cur.y][node.dir].nodes {
-			// if !passed[n.pos.x][n.pos.y][n.dir] {
-			// }
 			queue.push_back(&q, n)
-			// fmt.printfln("iter %v, push %v", iter, n)
 		}
 	}
 }
