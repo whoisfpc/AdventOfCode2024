@@ -2,6 +2,7 @@ package day17
 
 import "core:fmt"
 import "core:os"
+import "core:slice"
 import "core:strconv"
 import "core:strings"
 
@@ -141,6 +142,87 @@ part1 :: proc(input: [][]u8) -> int {
 }
 
 part2 :: proc(input: [][]u8) -> int {
+	ans := 0
+	prog := make([dynamic]int)
+	defer delete(prog)
+	outs := make([dynamic]int)
+	defer delete(outs)
+
+	for c in input[4] {
+		switch c {
+		case '0' ..= '9':
+			append(&prog, int(c - '0'))
+		}
+	}
+
+	revp := make([]int, len(prog))
+	defer delete(revp)
+
+	#reverse for x, ri in prog {
+		revp[len(prog) - ri - 1] = x
+	}
+
+	octs: [16]int
+	si := 0
+
+
+	for si >= 0 && si < len(prog) {
+
+		pass := false
+		for octs[si] < 8 {
+			clear(&outs)
+			state := State {
+				reg_a = octs_to_int(octs, si),
+				reg_b = 0,
+				reg_c = 0,
+				pc    = 0,
+			}
+			// fmt.println("check a", state.reg_a, octs)
+			for state.pc < len(prog) {
+				opcode := prog[state.pc]
+				operand := prog[state.pc + 1]
+				next_pc, out_val := Op_Inst[opcode](&state, operand)
+				state.pc = next_pc
+				if out_val != nil {
+					append(&outs, out_val.(int))
+				}
+			}
+			if slice.equal(outs[:], prog[len(prog) - si - 1:]) {
+				// fmt.println(outs[:])
+				pass = true
+				break
+			} else {
+				octs[si] += 1
+			}
+		}
+		if pass {
+			si += 1
+		} else {
+			octs[si] = 0
+			si -= 1
+			if si >= 0 {
+				octs[si] += 1
+			}
+		}
+	}
+
+	ans = octs_to_int(octs, 15)
+	return ans
+}
+
+octs_to_int :: proc(octs: [16]int, si: int) -> int {
+	ret := 0
+	for i in 0 ..= si {
+		ret = ret << 3
+		ret = ret | octs[i]
+	}
+	// for o, i in octs {
+	// 	ret = o << (3 * uint(i)) | ret
+	// }
+	return ret
+}
+
+part2_fake :: proc(input: [][]u8) -> int {
 	ans := 0
 	prog := make([dynamic]int)
 	defer delete(prog)
