@@ -149,7 +149,7 @@ print_map :: proc(corrup_map: [][]bool) {
 	}
 }
 
-part2 :: proc(input: [][]u8) -> int {
+part2_brute_force :: proc(input: [][]u8) -> int {
 	ans := 0
 	corrup_map := utils.make_2d(height, width, bool)
 	defer utils.destroy_2d(corrup_map)
@@ -169,4 +169,104 @@ part2 :: proc(input: [][]u8) -> int {
 	}
 	// print_map(corrup_map)
 	return ans
+}
+
+part2 :: proc(input: [][]u8) -> int {
+	ans := 0
+	corrup_map := utils.make_2d(height, width, bool)
+	defer utils.destroy_2d(corrup_map)
+	corrupts := make([dynamic]V2, 0, len(input))
+	defer delete(corrupts)
+
+	for i in 0 ..< len(input) {
+		line := transmute(string)input[i]
+		comma := strings.index(line, ",")
+		// 方便显示，调换x和y
+		y, _ := strconv.parse_int(line[:comma])
+		x, _ := strconv.parse_int(line[comma + 1:])
+		corrup_map[x][y] = true
+		append(&corrupts, V2{x, y})
+	}
+	// print_map(corrup_map)
+	ds_map := utils.make_2d(height, width, Ds_Node)
+	defer utils.destroy_2d(ds_map)
+
+	for i in 0 ..< height {
+		for j in 0 ..< width {
+			pos := V2{i, j}
+			ds_make(pos, ds_map)
+		}
+	}
+
+	for line, i in corrup_map {
+		for b, j in line {
+			if b {
+				continue
+			}
+			pos := V2{i, j}
+			for offset in Move {
+				new_pos := pos + offset
+				if new_pos.x < 0 || new_pos.x >= height || new_pos.y < 0 || new_pos.y >= width {
+					continue
+				}
+				if corrup_map[new_pos.x][new_pos.y] {
+					continue
+				}
+				ds_merge(pos, new_pos, ds_map)
+			}
+		}
+	}
+
+	#reverse for pos, i in corrupts {
+		corrup_map[pos.x][pos.y] = false
+		for offset in Move {
+			new_pos := pos + offset
+			if new_pos.x < 0 || new_pos.x >= height || new_pos.y < 0 || new_pos.y >= width {
+				continue
+			}
+			if corrup_map[new_pos.x][new_pos.y] {
+				continue
+			}
+			ds_merge(pos, new_pos, ds_map)
+		}
+		start_set := ds_find(V2{0, 0}, ds_map)
+		end_set := ds_find(V2{height - 1, width - 1}, ds_map)
+		if start_set == end_set {
+			fmt.printfln("%v,%v", pos.y, pos.x)
+			break
+		}
+	}
+	// print_map(corrup_map)
+
+	return ans
+}
+
+Ds_Node :: struct {
+	pos:    V2,
+	parent: V2,
+}
+
+// 并查集
+ds_make :: proc(pos: V2, ds_map: [][]Ds_Node) {
+	ds_map[pos.x][pos.y] = Ds_Node {
+		pos    = pos,
+		parent = pos,
+	}
+}
+
+ds_find :: proc(pos: V2, ds_map: [][]Ds_Node) -> V2 {
+	x := &ds_map[pos.x][pos.y]
+	for x.parent != x.pos {
+		x.parent = ds_map[x.parent.x][x.parent.y].parent
+		x = &ds_map[x.parent.x][x.parent.y]
+	}
+	return x.pos
+}
+
+ds_merge :: proc(pos1, pos2: V2, ds_map: [][]Ds_Node) {
+	root1 := ds_find(pos1, ds_map)
+	root2 := ds_find(pos2, ds_map)
+	if root1 != root2 {
+		ds_map[root1.x][root1.y].parent = root2
+	}
 }
