@@ -244,6 +244,7 @@ part2 :: proc(input: [][]u8) -> int {
 Ds_Node :: struct {
 	pos:    V2,
 	parent: V2,
+	size:   int,
 }
 
 // 并查集
@@ -251,6 +252,7 @@ ds_make :: proc(pos: V2, ds_map: [][]Ds_Node) {
 	ds_map[pos.x][pos.y] = Ds_Node {
 		pos    = pos,
 		parent = pos,
+		size   = 1,
 	}
 }
 
@@ -266,7 +268,12 @@ ds_find :: proc(pos: V2, ds_map: [][]Ds_Node) -> V2 {
 ds_merge :: proc(pos1, pos2: V2, ds_map: [][]Ds_Node) {
 	root1 := ds_find(pos1, ds_map)
 	root2 := ds_find(pos2, ds_map)
-	if root1 != root2 {
-		ds_map[root1.x][root1.y].parent = root2
+	if root1 == root2 {
+		return
 	}
+	if ds_map[root1.x][root1.y].size < ds_map[root2.x][root2.y].size {
+		root1, root2 = root2, root1
+	}
+	ds_map[root1.x][root1.y].parent = root2
+	ds_map[root1.x][root1.y].size += ds_map[root2.x][root2.y].size
 }
