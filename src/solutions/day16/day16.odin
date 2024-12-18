@@ -5,6 +5,7 @@ import pq "core:container/priority_queue"
 import "core:container/queue"
 import "core:fmt"
 import "core:os"
+import "core:slice"
 import "core:strings"
 
 V2 :: [2]int
@@ -24,9 +25,10 @@ Direction_Move := [Direction][2]int {
 }
 
 Node :: struct {
-	pos:  V2,
-	dir:  Direction,
-	cost: int,
+	pos:       V2,
+	dir:       Direction,
+	cost:      int,
+	index_map: [][][Direction]int `fmt:"-"`,
 }
 
 less_node :: proc(a, b: Node) -> bool {
@@ -61,15 +63,44 @@ turn_right :: proc(dir: Direction) -> Direction {
 	unreachable()
 }
 
-fix_pq :: proc(q: ^pq.Priority_Queue(Node), v: Node) {
-	for &node, i in q.queue {
-		if node.pos == v.pos && node.dir == v.dir {
-			node.cost = v.cost
-			pq.fix(q, i)
-			return
-		}
-	}
+get_node_idx :: proc(v: Node) -> int {
+	return v.index_map[v.pos.x][v.pos.y][v.dir]
+}
+
+push_pq :: proc(q: ^pq.Priority_Queue(Node), v: Node) {
+	v.index_map[v.pos.x][v.pos.y][v.dir] = pq.len(q^)
+	old_idx := get_node_idx(v)
 	pq.push(q, v)
+	new_idx := get_node_idx(v)
+}
+
+pop_pq :: proc(q: ^pq.Priority_Queue(Node)) -> Node {
+	v := pq.pop(q)
+	v.index_map[v.pos.x][v.pos.y][v.dir] = -1
+	return v
+}
+
+fix_pq :: proc(q: ^pq.Priority_Queue(Node), v: Node) {
+	idx := get_node_idx(v)
+	if idx == -1 {
+		push_pq(q, v)
+	} else {
+		n := q.queue[idx]
+		if !(n.pos == v.pos && n.dir == v.dir) {
+			fmt.println(idx, n, v)
+			assert(false)
+		}
+
+		n.cost = v.cost
+		q.queue[idx] = n
+		pq.fix(q, idx)
+	}
+}
+
+node_swap_proc :: proc(q: []Node, i, j: int) {
+	q[i], q[j] = q[j], q[i]
+	q[i].index_map[q[i].pos.x][q[i].pos.y][q[i].dir] = i
+	q[j].index_map[q[j].pos.x][q[j].pos.y][q[j].dir] = j
 }
 
 part1 :: proc(input: [][]u8) -> int {
@@ -77,9 +108,19 @@ part1 :: proc(input: [][]u8) -> int {
 	height, width := len(input), len(input[0])
 	dist := utils.make_2d(height, width, [Direction]int)
 	defer utils.destroy_2d(dist)
+	node_pq_map := utils.make_2d(height, width, [Direction]int)
+	defer utils.destroy_2d(node_pq_map)
+
+	for line in node_pq_map {
+		for &c in line {
+			for &d in c {
+				d = -1
+			}
+		}
+	}
 
 	q: pq.Priority_Queue(Node)
-	pq.init(&q, less_node, pq.default_swap_proc(Node))
+	pq.init(&q, less_node, node_swap_proc)
 	pq.reserve(&q, height * width)
 	defer pq.destroy(&q)
 
@@ -98,29 +139,33 @@ part1 :: proc(input: [][]u8) -> int {
 	}
 	dist[start.x][start.y][.Right] = 0
 	start_node := Node {
-		pos  = start,
-		dir  = .Right,
-		cost = 0,
+		pos       = start,
+		dir       = .Right,
+		cost      = 0,
+		index_map = node_pq_map,
 	}
-	pq.push(&q, start_node)
+	push_pq(&q, start_node)
 
 	for pq.len(q) > 0 {
-		node := pq.pop(&q)
+		node := pop_pq(&q)
 		neighbor: [3]Node
 		neighbor[0] = Node {
-			pos  = node.pos,
-			dir  = turn_left(node.dir),
-			cost = node.cost + 1000,
+			pos       = node.pos,
+			dir       = turn_left(node.dir),
+			cost      = node.cost + 1000,
+			index_map = node_pq_map,
 		}
 		neighbor[1] = Node {
-			pos  = node.pos,
-			dir  = turn_right(node.dir),
-			cost = node.cost + 1000,
+			pos       = node.pos,
+			dir       = turn_right(node.dir),
+			cost      = node.cost + 1000,
+			index_map = node_pq_map,
 		}
 		neighbor[2] = Node {
-			pos  = node.pos + Direction_Move[node.dir],
-			dir  = node.dir,
-			cost = node.cost + 1,
+			pos       = node.pos + Direction_Move[node.dir],
+			dir       = node.dir,
+			cost      = node.cost + 1,
+			index_map = node_pq_map,
 		}
 
 		for v in neighbor {
@@ -164,8 +209,19 @@ part2 :: proc(input: [][]u8) -> int {
 		utils.destroy_2d(prev)
 	}
 
+	node_pq_map := utils.make_2d(height, width, [Direction]int)
+	defer utils.destroy_2d(node_pq_map)
+
+	for line in node_pq_map {
+		for &c in line {
+			for &d in c {
+				d = -1
+			}
+		}
+	}
+
 	q: pq.Priority_Queue(Node)
-	pq.init(&q, less_node, pq.default_swap_proc(Node))
+	pq.init(&q, less_node, node_swap_proc)
 	pq.reserve(&q, height * width)
 	defer pq.destroy(&q)
 
@@ -185,29 +241,33 @@ part2 :: proc(input: [][]u8) -> int {
 	}
 	dist[start.x][start.y][.Right] = 0
 	start_node := Node {
-		pos  = start,
-		dir  = .Right,
-		cost = 0,
+		pos       = start,
+		dir       = .Right,
+		cost      = 0,
+		index_map = node_pq_map,
 	}
-	pq.push(&q, start_node)
+	push_pq(&q, start_node)
 
 	for pq.len(q) > 0 {
-		node := pq.pop(&q)
+		node := pop_pq(&q)
 		neighbor: [3]Node
 		neighbor[0] = Node {
-			pos  = node.pos,
-			dir  = turn_left(node.dir),
-			cost = node.cost + 1000,
+			pos       = node.pos,
+			dir       = turn_left(node.dir),
+			cost      = node.cost + 1000,
+			index_map = node_pq_map,
 		}
 		neighbor[1] = Node {
-			pos  = node.pos,
-			dir  = turn_right(node.dir),
-			cost = node.cost + 1000,
+			pos       = node.pos,
+			dir       = turn_right(node.dir),
+			cost      = node.cost + 1000,
+			index_map = node_pq_map,
 		}
 		neighbor[2] = Node {
-			pos  = node.pos + Direction_Move[node.dir],
-			dir  = node.dir,
-			cost = node.cost + 1,
+			pos       = node.pos + Direction_Move[node.dir],
+			dir       = node.dir,
+			cost      = node.cost + 1,
+			index_map = node_pq_map,
 		}
 
 		for v in neighbor {
