@@ -91,8 +91,7 @@ fix_pq :: proc(q: ^pq.Priority_Queue(Node), v: Node) {
 			assert(false)
 		}
 
-		n.cost = v.cost
-		q.queue[idx] = n
+		q.queue[idx].cost = v.cost
 		pq.fix(q, idx)
 	}
 }
