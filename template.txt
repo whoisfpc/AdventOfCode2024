@@ -1,0 +1,18 @@
+package dayXX
+
+import "core:fmt"
+import "core:os"
+import "core:strings"
+import "core:strconv"
+import "core:slice"
+
+
+part1 :: proc(input: [][]u8) -> int {
+	ans := 0
+    return ans
+}
+
+part2 :: proc(input: [][]u8) -> int {
+	ans := 0
+    return ans
+}
