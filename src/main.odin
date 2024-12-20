@@ -23,6 +23,7 @@ import "solutions/day16"
 import "solutions/day17"
 import "solutions/day18"
 import "solutions/day19"
+import "solutions/day20"
 
 Solver :: #type proc(input: [][]u8) -> int
 
@@ -52,6 +53,7 @@ main :: proc() {
 	solvers["17"] = {day17.part1, day17.part2}
 	solvers["18"] = {day18.part1, day18.part2}
 	solvers["19"] = {day19.part1, day19.part2}
+	solvers["20"] = {day20.part1, day20.part2}
 
 	day := os.args[1]
 	part := os.args[2]
