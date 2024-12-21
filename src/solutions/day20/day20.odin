@@ -34,7 +34,7 @@ part1 :: proc(input: [][]u8) -> int {
 
 	old_dist := dist[end.x][end.y]
 	for p in path {
-		ans += dig_wall(input, p, dist, old_dist, 100, 2, nil)
+		ans += dig_wall2(input, p, dist, old_dist, 100, 2, nil)
 	}
 	return ans
 }
@@ -154,8 +154,41 @@ part2 :: proc(input: [][]u8) -> int {
 	defer delete(save_map)
 	old_dist := dist[end.x][end.y]
 	for p in path {
-		ans += dig_wall(input, p, dist, old_dist, 100, 20, &save_map)
+		ans += dig_wall2(input, p, dist, old_dist, 100, 20, &save_map)
 	}
 	// fmt.println(save_map)
 	return ans
+}
+
+dig_wall2 :: proc(
+	input: [][]u8,
+	start: V2,
+	dist: [][]int,
+	old_dist, save_dist, hole_max: int,
+	save_map: ^map[int]int,
+) -> int {
+	height, width := len(input), len(input[0])
+	ret := 0
+
+	for i := -hole_max; i <= hole_max; i += 1 {
+		remain := hole_max - abs(i)
+		for j := -remain; j <= remain; j += 1 {
+			new_pos := start + V2{i, j}
+			if new_pos.x < 0 || new_pos.x >= height || new_pos.y < 0 || new_pos.y >= width {
+				continue
+			}
+			if input[new_pos.x][new_pos.y] != '#' && start != new_pos {
+				new_min := dist[start.x][start.y] + abs(i) + abs(j) + (old_dist - dist[new_pos.x][new_pos.y])
+				if old_dist - new_min > 0 && save_map != nil {
+					save_map[old_dist - new_min] += 1
+				}
+				if old_dist - new_min >= save_dist {
+					// fmt.println(start, new_pos, old_dist - new_min, i + j)
+					ret += 1
+				}
+			}
+		}
+	}
+
+	return ret
 }
