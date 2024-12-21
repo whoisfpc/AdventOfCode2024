@@ -185,6 +185,8 @@ get_cost :: proc(a, b: u8, dirpad: bool, depth: int) -> int {
 		return numpad_cost
 	}
 
+	// 除了第一层depth，这里拿出来的都是dirpad的路径
+	// 解法就是对numpad的每一次移动，找到套娃多次后的dirpad长度最小的值，并且使用cost_cache缓存避免重复计算
 	paths := get_all_path(a, b, dirpad)
 	min_cost := max(int)
 	for path in paths {
