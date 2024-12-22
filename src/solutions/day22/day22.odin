@@ -30,23 +30,19 @@ get_next_secret :: proc(secret: int) -> int {
 	return secret
 }
 
+Wave: [19][19][19][19]int
+
 part2 :: proc(input: [][]u8) -> int {
 	ans := 0
 
 	all_secrets: [dynamic]int
 	defer delete(all_secrets)
-	all_seqs: [dynamic]map[V4]int
-	flat_seqs: map[V4]bool
-	defer {
-		defer delete(flat_seqs)
-		for seqs in all_seqs {
-			delete(seqs)
-		}
-		delete(all_seqs)
-	}
+	seqs: map[V4]int
+	delete(seqs)
 
 	for line in input {
 		clear(&all_secrets)
+		clear(&seqs)
 		line_s := transmute(string)line
 		sec, _ := strconv.parse_int(line_s)
 		append(&all_secrets, sec % 10)
@@ -55,7 +51,6 @@ part2 :: proc(input: [][]u8) -> int {
 			append(&all_secrets, sec % 10)
 		}
 
-		seqs: map[V4]int
 		for num, i in all_secrets {
 			if i < 4 {
 				continue
@@ -67,21 +62,21 @@ part2 :: proc(input: [][]u8) -> int {
 			seq[3] = all_secrets[i] - all_secrets[i - 1]
 			if !(seq in seqs) {
 				seqs[seq] = num
+				wave_i := seq + V4{9, 9, 9, 9}
+				Wave[wave_i.x][wave_i.y][wave_i.z][wave_i.w] += num
 			}
-			flat_seqs[seq] = true
 		}
-		append(&all_seqs, seqs)
 	}
 
-	banans := 0
-	for seq in flat_seqs {
-		banans = 0
-		for seqs in all_seqs {
-			banans += seqs[seq]
-		}
-		if banans > ans {
-			ans = banans
+	for x in Wave {
+		for y in x {
+			for z in y {
+				for w in z {
+					ans = max(ans, w)
+				}
+			}
 		}
 	}
+
 	return ans
 }
