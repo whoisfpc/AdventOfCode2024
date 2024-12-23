@@ -9,6 +9,7 @@ import "core:strings"
 
 all_names: [26 * 26]string
 adj_map: [26 * 26][26 * 26]bool
+con_map: map[int][dynamic]int
 
 name_to_index :: proc(name: string) -> int {
 	assert(len(name) == 2)
@@ -45,6 +46,18 @@ fill_adj_map :: proc(input: [][]u8, names: ^map[int]bool) {
 		adj_map[idx_b][idx_a] = true
 		names[idx_a] = true
 		names[idx_b] = true
+		add_con(idx_a, idx_b)
+		add_con(idx_b, idx_a)
+	}
+}
+
+add_con :: proc(a, b: int) {
+	if a in con_map {
+		append(&con_map[a], b)
+	} else {
+		list: [dynamic]int
+		append(&list, b)
+		con_map[a] = list
 	}
 }
 
@@ -54,17 +67,14 @@ part1 :: proc(input: [][]u8) -> int {
 	defer delete(names)
 	prepare()
 	fill_adj_map(input, &names)
-	name_list: [dynamic]int
-	for name in names {
-		append(&name_list, name)
-	}
-	count := len(name_list)
-	for ni in 0 ..< count {
-		for nj in ni + 1 ..< count {
+
+	for idx, con in con_map {
+		count := len(con)
+		for nj in 0 ..< count {
 			for nk in nj + 1 ..< count {
-				i := name_list[ni]
-				j := name_list[nj]
-				k := name_list[nk]
+				i := idx
+				j := con[nj]
+				k := con[nk]
 				has_t := false
 				has_t |= index_start_t(i)
 				has_t |= index_start_t(j)
@@ -78,7 +88,8 @@ part1 :: proc(input: [][]u8) -> int {
 			}
 		}
 	}
-	return ans
+
+	return ans / 3
 }
 
 part2 :: proc(input: [][]u8) -> int {
