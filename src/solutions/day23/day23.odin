@@ -36,7 +36,7 @@ prepare :: proc() {
 	}
 }
 
-fill_adj_map :: proc(input: [][]u8, names: ^map[int]bool) {
+fill_adj_map :: proc(input: [][]u8) {
 	for line in input {
 		a := transmute(string)line[:2]
 		b := transmute(string)line[3:]
@@ -44,8 +44,6 @@ fill_adj_map :: proc(input: [][]u8, names: ^map[int]bool) {
 		idx_b := name_to_index(b)
 		adj_map[idx_a][idx_b] = true
 		adj_map[idx_b][idx_a] = true
-		names[idx_a] = true
-		names[idx_b] = true
 		add_con(idx_a, idx_b)
 		add_con(idx_b, idx_a)
 	}
@@ -63,10 +61,8 @@ add_con :: proc(a, b: int) {
 
 part1 :: proc(input: [][]u8) -> int {
 	ans := 0
-	names: map[int]bool
-	defer delete(names)
 	prepare()
-	fill_adj_map(input, &names)
+	fill_adj_map(input)
 
 	for idx, con in con_map {
 		count := len(con)
@@ -95,5 +91,42 @@ part1 :: proc(input: [][]u8) -> int {
 part2 :: proc(input: [][]u8) -> int {
 	ans := 0
 	prepare()
+	fill_adj_map(input)
+	max_group := 0
+	max_group_list: [dynamic]int
+	group_list: [dynamic]int
+	defer delete(max_group_list)
+	defer delete(group_list)
+
+	for idx, con in con_map {
+		clear(&group_list)
+		append(&group_list, idx)
+		for i in con {
+			check := true
+			for g in group_list {
+				if !adj_map[i][g] {
+					check = false
+					break
+				}
+			}
+			if check {
+				append(&group_list, i)
+			}
+		}
+		if len(group_list) > max_group {
+			max_group = len(group_list)
+			clear(&max_group_list)
+			for g in group_list {
+				append(&max_group_list, g)
+			}
+		}
+	}
+
+	slice.sort(max_group_list[:])
+	for g in max_group_list {
+		fmt.printf("%v,", index_to_name(g))
+	}
+	fmt.println()
+
 	return ans
 }
